@@ -20,13 +20,6 @@
     "url": "https://github.com/panoplyio/facebook-insight-stream/issues"
   },
   "homepage": "https://github.com/panoplyio/facebook-insight-stream#readme",
-  "dependencies": {
-    "bluebird": "^3.0.5",
-    "request": "^2.67.0",
-    "stream": "0.0.2",
-    "sugar": "^1.4.1",
-    "util": "^0.10.3"
-  },
   "devDependencies": {
     "mocha": "^2.3.4"
   }
