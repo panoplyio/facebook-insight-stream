@@ -7,6 +7,7 @@ module.exports = FacebookInsightStream;
 var util = require( "util" );
 var sugar = require( "sugar" );
 var stream = require( "stream" );
+var extend = require( "extend" );
 var request = require( "request" );
 var Promise = require( "bluebird" );
 
@@ -42,8 +43,9 @@ FacebookInsightStream.prototype._read = function ( ) {
     }
     var metrics = this.options.metrics.clone();
     var item = this.items.shift();
+    var events = this.events.clone();
 
-    this._collect( metrics, item, {} )
+    this._collect( metrics, item, {}, events )
         .then( this.push.bind( this ) )
 }
 
@@ -71,7 +73,16 @@ FacebookInsightStream.prototype._init = function ( callback ) {
         "period=" + options.period,
         "since=" + since,
         "until=" + until,
-    ].join( "&" )
+    ].join( "&" );
+
+    var hasEvents = options.events && options.events.length;
+    if ( hasEvents ) {
+        query += "&event_name={ev}"
+    }
+
+    if ( options.aggregate ) {
+        query += "&aggregateBy={agg}";
+    }
 
     // this url is urlPattern shared by all the requests
     // each request using thie pattern should replace the 
@@ -85,6 +96,8 @@ FacebookInsightStream.prototype._init = function ( callback ) {
         .map( this._initItem, { concurrency: 3 } )
         .then( function ( items ) {
             this.items = items;
+            this.events = options.events || [];
+
             this.total = items.length;
             this.loaded = 0;
             callback();
@@ -125,10 +138,12 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
 // of the current metric to the appropriate key in the buffer.
 // finally we generating single row for each day.
 
-FacebookInsightStream.prototype._collect = function ( metrics, item, buffer ) {
+FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, events ) {
     var options = this.options;
+    var hasEvents = events && events.length;
+
     // done with the current item
-    if ( ! metrics.length ) {
+    if ( ! metrics.length && ! hasEvents ) {
         var data = Object.keys( buffer ).map( function ( end_time ) {
             var row = buffer[ end_time ];
             row.date = end_time;
@@ -145,12 +160,26 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer ) {
         return data;
     }
 
-    var _metric = metrics.shift();
+    // for the audience API, we just use one metric ['app_event']
+    // with a few events
+    var _metric = metrics.shift() || options.metrics[ 0 ];
     var model = { id: item.id, metric: _metric }
+
+    var _ev;
+    var _agg;
+    if ( hasEvents ) {
+        // extend the query model with event name
+        // and aggregation type
+        _ev = events.shift();
+        _agg = aggregationType( _ev );
+
+        extend( model, { ev: _ev, agg: _agg } );
+    }
+
     var url = strReplace( this.url, model );
     var title = "FACEBOOK " + options.node.toUpperCase();
 
-    console.log( new Date().toISOString(), title, url )
+    console.log( new Date().toISOString(), title, url );
 
     return request.getAsync( url )
         .get( 1 )
@@ -173,10 +202,13 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer ) {
         .each( function ( val ) {
             var time = val.end_time || val.time;
             buffer[ time ] || ( buffer[ time ] = {} )
-            buffer[ time ][ _metric ] = val.value;
+
+            // either a metric or an event
+            var column = _ev ? _ev : _metric;
+            buffer[ time ][ column ] = val.value;
         })
         .then( function () {
-            return this._collect( metrics, item, buffer );
+            return this._collect( metrics, item, buffer, events );
         })
         .catch( function ( error ) {
             if ( error.skip ) {
@@ -201,4 +233,15 @@ function strReplace ( string, model ) {
     })
 
     return string;
+}
+
+function aggregationType ( ev ) {
+    var events = [ "fb_ad_network_imp", "fb_ad_network_click" ];
+
+    var shouldUseCount = ev && events.indexOf( ev ) > -1;
+    if ( shouldUseCount ) {
+        return "COUNT"
+    }
+
+    return "SUM";
 }
