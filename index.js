@@ -217,6 +217,17 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             // either a metric or an event
             var column = _ev ? _ev : _metric;
             buffer[ time ][ column ] = val.value;
+
+            // set breakdowns data if given
+            var breakdowns = options.breakdowns;
+            if ( !breakdowns || !val.breakdowns ) {
+                return;
+            }
+
+            for ( var i = 0; i < breakdowns.length; i += 1 ) {
+                var b = breakdowns[ i ];
+                buffer[ time ][ b ] = val.breakdowns[ b ];
+            }
         })
         .then( function () {
             return this._collect( metrics, item, buffer, events );
