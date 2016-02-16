@@ -76,12 +76,23 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     ].join( "&" );
 
     var hasEvents = options.events && options.events.length;
+    var breakdowns = options.breakdowns;
+
     if ( hasEvents ) {
         query += "&event_name={ev}"
     }
 
     if ( options.aggregate ) {
         query += "&aggregateBy={agg}";
+    }
+
+    if ( breakdowns && breakdowns.length ) {
+        for ( var i = 0; i < breakdowns.length; i += 1 ) {
+            query += "&breakdowns[{index}]={breakdown}".assign( {
+                index: i,
+                breakdown: breakdowns[ i ]
+            });
+        }
     }
 
     // this url is urlPattern shared by all the requests
