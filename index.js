@@ -155,9 +155,12 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
     // done with the current item
     if ( ! metrics.length && ! hasEvents ) {
-        var data = Object.keys( buffer ).map( function ( end_time ) {
-            var row = buffer[ end_time ];
-            row.date = end_time;
+        var data = Object.keys( buffer ).map( function ( key ) {
+            var row = buffer[ key ];
+
+            // if the key is constructed with numerous attributes,
+            // take the datetime information
+            row.date = key.split( "__" )[ 0 ];
             row[ options.node + "Id" ] = item.id;
             row[ options.node + "Name" ] = item.name;
             return row;
@@ -211,12 +214,22 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             return data[ 0 ].values || data
         })
         .each( function ( val ) {
-            var time = val.end_time || val.time;
-            buffer[ time ] || ( buffer[ time ] = {} )
+            var key = val.end_time || val.time;
+            // when using breakdowns we get numerous results for
+            // the same date therefore we need to identify unique 
+            // keys for the buffer by the date and different breakdowns
+            // we're using the '__' to later seperate the date
+            Object.keys( val.breakdowns || {} ).forEach( function ( b ){
+                key += "__{breakdown}".assign( {
+                    breakdown: val.breakdowns[ b ]
+                });
+            });
+
+            buffer[ key ] || ( buffer[ key ] = {} )
 
             // either a metric or an event
             var column = _ev ? _ev : _metric;
-            buffer[ time ][ column ] = val.value;
+            buffer[ key ][ column ] = val.value;
 
             // set breakdowns data if given
             var breakdowns = options.breakdowns;
@@ -225,8 +238,12 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             }
 
             for ( var i = 0; i < breakdowns.length; i += 1 ) {
+                // options breakdown
                 var b = breakdowns[ i ];
-                buffer[ time ][ b ] = val.breakdowns[ b ];
+
+                if ( val.breakdowns[ b ] ) {
+                    buffer[ key ][ b ] = val.breakdowns[ b ];
+                }
             }
         })
         .then( function () {
