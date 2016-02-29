@@ -55,7 +55,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     // building url pattern for all the request
     var until = Date.now();
     var since = new Date();
-    since = since.setDate( since.getDay() - options.pastdays )
+    since = since.setDate( since.getDate() - options.pastdays )
 
     // fb ask for timestamp in seconds
     until = Math.round( until / 1000 );
