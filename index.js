@@ -28,7 +28,6 @@ function FacebookInsightStream( options ) {
 
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
-    console.log( 'this options: ', this.options );
 
 }
 
