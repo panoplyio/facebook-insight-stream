@@ -135,10 +135,15 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         .then( JSON.parse )
         .then( errorHandler )
         .then( function ( data ) {
-            return {
+            var result = {
                 id: item,
                 name: data.name || data.message || data.story
             }
+
+            if ( options.node == 'post' ) {
+                result.createdTime  = data.created_time
+            }
+            return result
         })
 }
 
