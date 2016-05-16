@@ -19,15 +19,16 @@ var BASEURL = "https://graph.facebook.com/v2.5";
 var EDGEMAP = {
     page: "insights",
     app: "app_insights",
+    post: "insights"
 }
 
 util.inherits( FacebookInsightStream, stream.Readable )
 function FacebookInsightStream( options ) {
-
     stream.Readable.call( this, { objectMode: true } );
 
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
+    console.log( 'this options: ', this.options );
 
 }
 
@@ -51,6 +52,7 @@ FacebookInsightStream.prototype._read = function ( ) {
 
 FacebookInsightStream.prototype._init = function ( callback ) {
     var options = this.options; 
+    console.log( 'node modules init', this.options )
 
     // building url pattern for all the request
     var until = Date.now();
@@ -136,7 +138,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         .then( function ( data ) {
             return {
                 id: item,
-                name: data.name
+                name: data.name || data.message || data.story
             }
         })
 }
@@ -163,6 +165,11 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             row.date = key.split( "__" )[ 0 ];
             row[ options.node + "Id" ] = item.id;
             row[ options.node + "Name" ] = item.name;
+            if ( row.date == 'lifetime' ) {
+                row[ '__tablename' ] = options.node + 's_lifetime';
+            } else {
+                row[ '__tablename' ] = options.node + 's';
+            }
             return row;
         })
 
@@ -214,7 +221,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             return data[ 0 ].values || data
         })
         .each( function ( val ) {
-            var key = val.end_time || val.time;
+            var key = val.end_time || val.time || 'lifetime';
             // when using breakdowns we get numerous results for
             // the same date therefore we need to identify unique 
             // keys for the buffer by the date and different breakdowns
@@ -229,7 +236,15 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
             // either a metric or an event
             var column = _ev ? _ev : _metric;
-            buffer[ key ][ column ] = val.value;
+
+            if ( typeof val.value == 'object' ) {
+                Object.keys( val.value ).map ( function ( subMetric ) {
+                    var col = column + '_' + subMetric;
+                    buffer[ key ][ col ] = val.value[subMetric];
+                })
+            } else {
+                buffer[ key ][ column ] = val.value;
+            }
 
             // set breakdowns data if given
             var breakdowns = options.breakdowns;
