@@ -51,7 +51,6 @@ FacebookInsightStream.prototype._read = function ( ) {
 
 FacebookInsightStream.prototype._init = function ( callback ) {
     var options = this.options; 
-    console.log( 'node modules init', this.options )
 
     // building url pattern for all the request
     var until = Date.now();
@@ -169,6 +168,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             row.date = key.split( "__" )[ 0 ];
             row[ options.node + "Id" ] = item.id;
             row[ options.node + "Name" ] = item.name;
+            // Set the table names for FB Posts based on the type of date
             if ( row.date == 'lifetime' ) {
                 row[ '__tablename' ] = options.node + 's_lifetime';
             } else {
