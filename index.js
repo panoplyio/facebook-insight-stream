@@ -138,7 +138,6 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 id: item,
                 name: data.name || data.message || data.story
             }
-
             if ( options.node == 'post' ) {
                 result.createdTime  = data.created_time
             }
@@ -168,7 +167,12 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             row.date = key.split( "__" )[ 0 ];
             row[ options.node + "Id" ] = item.id;
             row[ options.node + "Name" ] = item.name;
-            // Set the table names for FB Posts based on the type of date
+            // set created_time for posts
+            if ( options.node == 'post' ) {
+                console.log( 'this is the item created time:', item.createdTime )
+                row[ 'created_time' ] = item.createdTime;
+            }
+            // Set the table name for FB tables based on the type of date
             if ( row.date == 'lifetime' ) {
                 row[ '__tablename' ] = options.node + 's_lifetime';
             } else {
