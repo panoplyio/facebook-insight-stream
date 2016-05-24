@@ -169,7 +169,6 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             row[ options.node + "Name" ] = item.name;
             // set created_time for posts
             if ( options.node == 'post' ) {
-                console.log( 'this is the item created time:', item.createdTime )
                 row[ 'created_time' ] = item.createdTime;
             }
             // Set the table name for FB tables based on the type of date
