@@ -46,7 +46,11 @@ FacebookInsightStream.prototype._read = function ( ) {
     var events = this.events.clone();
 
     this._collect( metrics, item, {}, events )
-        .then( this.push.bind( this ) )
+        .then( this._handleData.bind( this ) )
+}
+
+FacebookInsightStream.prototype._handleData = function ( data ) {
+    return this.push( data )
 }
 
 FacebookInsightStream.prototype._init = function ( callback ) {
@@ -138,7 +142,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 id: item,
                 name: data.name || data.message || data.story
             }
-            if ( options.node == 'post' ) {
+            if ( options.node === 'post' ) {
                 result.createdTime  = data.created_time
             }
             return result
@@ -168,14 +172,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             row[ options.node + "Id" ] = item.id;
             row[ options.node + "Name" ] = item.name;
             // set created_time for posts
-            if ( options.node == 'post' ) {
+            if ( options.node === 'post' ) {
                 row[ 'created_time' ] = item.createdTime;
-            }
-            // Set the table name for FB tables based on the type of date
-            if ( row.date == 'lifetime' ) {
-                row[ '__tablename' ] = options.node + 's_lifetime';
-            } else {
-                row[ '__tablename' ] = options.node + 's';
             }
             return row;
         })
@@ -243,14 +241,13 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
             // either a metric or an event
             var column = _ev ? _ev : _metric;
-
-            if ( typeof val.value == 'object' ) {
+            if ( typeof val.value === 'object' ) {
                 Object.keys( val.value ).map ( function ( subMetric ) {
                     var col = column + '_' + subMetric;
                     buffer[ key ][ col ] = val.value[subMetric];
                 })
             } else {
-                buffer[ key ][ column ] = val.value;
+                buffer[ key ][ column ] = val.value || null;
             }
 
             // set breakdowns data if given
