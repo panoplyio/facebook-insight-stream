@@ -10,11 +10,8 @@ var stream = require( "stream" );
 var extend = require( "extend" );
 var request = require( "request" );
 var Promise = require( "bluebird" );
-var JSONbig = require( "json-bigint" );
 
 request = Promise.promisifyAll( request )
-
-JSON.parse = JSONbig.parse;
 
 var BASEURL = "https://graph.facebook.com/v2.5";
 

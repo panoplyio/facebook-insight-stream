@@ -22,8 +22,5 @@
   "homepage": "https://github.com/panoplyio/facebook-insight-stream#readme",
   "devDependencies": {
     "mocha": "^2.3.4"
-  },
-  "dependencies": {
-    "json-bigint": "^0.2.0"
   }
 }
