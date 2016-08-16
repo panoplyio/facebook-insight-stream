@@ -42,11 +42,17 @@ FacebookInsightStream.prototype._read = function ( ) {
         return this.push( null )
     }
     var metrics = this.options.metrics.clone();
-    var item = this.items.shift();
+    var item = this.items[ this.items.length - 1 ];
     var events = this.events.clone();
 
     this._collect( metrics, item, {}, events )
+        .tap( this.removeItem.bind( this ) )
         .then( this._handleData.bind( this ) )
+}
+
+FacebookInsightStream.prototype.removeItem = function () {
+    var idx = this.items.indexOf( this.item );
+    this.items.splice( idx, 1 );
 }
 
 FacebookInsightStream.prototype._handleData = function ( data ) {
@@ -160,7 +166,6 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
 FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, events ) {
     var options = this.options;
     var hasEvents = events && events.length;
-
     // done with the current item
     if ( ! metrics.length && ! hasEvents ) {
         var data = Object.keys( buffer ).map( function ( key ) {
@@ -188,7 +193,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
     // for the audience API, we just use one metric ['app_event']
     // with a few events
-    var _metric = metrics.shift() || options.metrics[ 0 ];
+    var _metric = metrics[ metrics.length -1 ] || options.metrics[ 0 ];
     var model = { id: item.id, metric: _metric }
 
     var _ev;
@@ -196,7 +201,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
     if ( hasEvents ) {
         // extend the query model with event name
         // and aggregation type
-        _ev = events.shift();
+        _ev = events[ events.length - 1 ];
         _agg = aggregationType( _ev );
 
         extend( model, { ev: _ev, agg: _agg } );
@@ -238,11 +243,10 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             });
 
             buffer[ key ] || ( buffer[ key ] = {} )
-
             // either a metric or an event
             var column = _ev ? _ev : _metric;
             if ( typeof val.value === 'object' ) {
-                Object.keys( val.value ).map ( function ( subMetric ) {
+                Object.keys( val.value ).map( function ( subMetric ) {
                     var col = column + '_' + subMetric;
                     buffer[ key ][ col ] = val.value[subMetric];
                 })
@@ -265,16 +269,34 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
                 }
             }
         })
+        .catch( SkipedError, function ( error ) {
+            console.log( "facebook-insights skiped error", error );    
+        })
         .then( function () {
+            // remove the current paramater when done
+            var _metricIdx = metrics.indexOf( _metric );
+            var _evIdx = events.indexOf( _ev );
+            metrics.splice( _metricIdx, 1 );
+            events.splice( _evIdx, 1 );
+
             return this._collect( metrics, item, buffer, events );
         })
         .catch( function ( error ) {
-            if ( error.skip ) {
-                return this._collect( metrics, item, buffer )
-            } else {
-                this.emit( "error", error )
-            }
+            var retry = this._collect.bind( this, metrics, item, buffer, events );
+            return this.handleError( error, retry );
         })
+}
+
+FacebookInsightStream.prototype.handleError = function ( error, retry ) {
+    if ( error.retry === true ) {
+        return retry();
+    } else {
+        this.emit( 'error', error );
+    }
+}
+
+function SkipedError ( error ) {
+    return error.skip === true;
 }
 
 function errorHandler ( body )  {
