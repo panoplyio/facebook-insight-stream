@@ -276,8 +276,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
                 }
             }
         })
-        .catch( SkipedError, function ( error ) {
-            console.log( "facebook-insights skiped error", error );    
+        .catch( SkippedError, function ( error ) {
+            console.log( "facebook-insights skipped error", error );
         })
         .then( function () {
             // remove the current paramater when done
@@ -314,7 +314,12 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
 }
 
 // predicate-based error filter 
-function SkipedError ( error ) {
+function SkippedError ( error ) {
+    var missingDataMessage = 'does not exist';
+    var missingDataError = error.message.indexOf( missingDataMessage ) > -1;
+    if ( this.options.ignoreMissing && missingDataError ) {
+        error.skip = true;
+    }
     return error.skip === true;
 }
 
