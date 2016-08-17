@@ -28,7 +28,6 @@ function FacebookInsightStream( options ) {
 
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
-
 }
 
 // _read will be called once for each collected item
@@ -145,7 +144,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         .bind( this )
         .get( 1 )
         .then( JSON.parse )
-        .then( errorHandler )
+        .then( errorHandler.bind( null, options ) )
         .then( function ( data ) {
             var result = {
                 id: item,
@@ -155,6 +154,9 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 result.createdTime  = data.created_time
             }
             return result
+        })
+        .catch( SkippedError, function ( error ) {
+            console.log( "facebook-insights skipped error", error );
         })
         .catch( function ( error ) {
             var retry = this._initItem.bind( this, item );
@@ -222,7 +224,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
     return request.getAsync( url )
         .get( 1 )
         .then( JSON.parse )
-        .then( errorHandler )
+        .then( errorHandler.bind( null, options ) )
         .get( "data" )
         .bind( this )
         .then( function ( data ) {
@@ -315,16 +317,14 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
 
 // predicate-based error filter 
 function SkippedError ( error ) {
-    var missingDataMessage = 'does not exist';
-    var missingDataError = error.message.indexOf( missingDataMessage ) > -1;
-    if ( this.options.ignoreMissing && missingDataError ) {
-        error.skip = true;
-    }
     return error.skip === true;
 }
 
-function errorHandler ( body )  {
+function errorHandler ( options, body )  {
     if ( body.error ) {
+        // Missing data is flagged by the error code 100
+        body.error.skip = options.ignoreMissing && body.error.code === 100
+
         throw body.error
     } else {
         return body
