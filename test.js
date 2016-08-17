@@ -14,7 +14,7 @@ describe( "Skip missing data", function () {
         apps: [ 'myApp' ],
         ignoreMissing: true
     }
-    var _err = { message: 'object foo does not exist' };
+    var _err = { message: 'skip error', code: 100 };
     var response = { "myApp": { error: _err, name: "myApp", data: dataGenerator( 1, null ) } }
 
     before( initialize( result, response, source ) )
