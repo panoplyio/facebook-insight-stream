@@ -8,6 +8,26 @@ var METRICS = require( "./metric-list" );
 
 var req_get = request.get;
 
+describe( "Skip missing data", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+        ignoreMissing: true
+    }
+    var _err = { message: 'object foo does not exist' };
+    var response = { "myApp": { error: _err, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source ) )
+    after( reset )
+
+    it( 'Skip missing data', function () {
+        var dataSize = Object.keys( result.data[ 0 ] ).length;
+        // the data size should be as the size of metrics + 3 columns ( date, name, id )
+        assert.equal( dataSize, METRICS.length + 2 );
+        assert.equal( result.data.length, 1 )
+    })
+})
+
 describe( "error", function () {
     var result = {};
     var source = {
@@ -163,7 +183,8 @@ function initialize( result, response, source ) {
             node: "app",
             period: "daily",
             metrics: METRICS,
-            itemList: source.apps
+            itemList: source.apps,
+            ignoreMissing: source.ignoreMissing
         }
 
         FacebookInsightStream.prototype.handleError = function ( error, retry ) {
