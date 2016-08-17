@@ -33,8 +33,6 @@ function FacebookInsightStream( options ) {
 
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
-    console.log( options.itemList )
-
 }
 
 // _read will be called once for each collected item
