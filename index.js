@@ -37,7 +37,6 @@ FacebookInsightStream.prototype._read = function ( ) {
     if ( ! this.items ) {
         return this._init( this._read.bind( this ) )
     }
-
     if ( ! this.items.length ) {
         return this.push( null )
     }
@@ -112,7 +111,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
     // options.itemlist can be either array of items or
     // promise that resolved with array of items 
-    Promise.resolve( options.itemList )
+    return Promise.resolve( options.itemList )
         .bind( this )
         .map( this._initItem, { concurrency: 3 } )
         .then( function ( items ) {
@@ -121,9 +120,12 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
             this.total = items.length;
             this.loaded = 0;
-            callback();
+            return callback();
         })
-        .catch( this.emit.bind( this, "error" ) )
+        .catch( function ( error ) {
+            var retry = this._init.bind( this, callback );
+            return this.handleError( error, retry )
+        })
 }
 
 FacebookInsightStream.prototype._initItem = function ( item ) {
@@ -140,6 +142,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
     console.log( new Date().toISOString(), title, url )
     
     return request.getAsync( url )
+        .bind( this )
         .get( 1 )
         .then( JSON.parse )
         .then( errorHandler )
@@ -152,6 +155,10 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 result.createdTime  = data.created_time
             }
             return result
+        })
+        .catch( function ( error ) {
+            var retry = this._initItem.bind( this, item );
+            return this.handleError( error, retry )
         })
 }
 
@@ -287,6 +294,17 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         })
 }
 
+/**
+ * Thrown error handling methos, when any part of the stream throws an error
+ * it pass its error to this method, with retry function and the thrown error
+ * this function decides if this error is retryable, and then retry the method
+ * that generated the error by colling to retry, otherwise it emmits error.
+ *
+ * Overide this method to create your own error handling and retrying mechanism
+ * 
+ * @param  {Error}  error 
+ * @param  {Function} retry the function that should be invoke to retry the process
+ */
 FacebookInsightStream.prototype.handleError = function ( error, retry ) {
     if ( error.retry === true ) {
         return retry();
@@ -295,13 +313,14 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
     }
 }
 
+// predicate-based error filter 
 function SkipedError ( error ) {
     return error.skip === true;
 }
 
 function errorHandler ( body )  {
     if ( body.error ) {
-        throw new Error( body.error.message )
+        throw body.error
     } else {
         return body
     }

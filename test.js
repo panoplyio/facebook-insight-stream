@@ -180,7 +180,7 @@ function initialize( result, response, source ) {
             result.data = result.data.concat( chunk )
         })
         .on( "error", function ( error ) {
-            result.error = error;
+            result.error || ( result.error = error );
             done();
             done = function () {};
         })
