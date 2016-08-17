@@ -25,9 +25,15 @@ var EDGEMAP = {
 util.inherits( FacebookInsightStream, stream.Readable )
 function FacebookInsightStream( options ) {
     stream.Readable.call( this, { objectMode: true } );
+    var isFunction = typeof options.itemList === 'function';
+    if ( !isFunction ) {
+        var itemList = options.itemList;
+        options.itemList = function () { return itemList }
+    }
 
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
+    console.log( options.itemList )
 
 }
 
@@ -36,6 +42,7 @@ FacebookInsightStream.prototype._read = function ( ) {
 
     if ( ! this.items ) {
         return this._init( this._read.bind( this ) )
+            .catch( this.emit.bind( this, 'error') )
     }
     if ( ! this.items.length ) {
         return this.push( null )
@@ -109,9 +116,10 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     // {id} and {metric} place holders with real values  
     this.url = [ path, query ].join( "?" )
 
-    // options.itemlist can be either array of items or
-    // promise that resolved with array of items 
-    return Promise.resolve( options.itemList )
+    // options.itemlist is a function that can return either array of items or
+    // or a promise that resolved with array of items
+    var itemList = options.itemList();
+    return Promise.resolve( itemList )
         .bind( this )
         .map( this._initItem, { concurrency: 3 } )
         .then( function ( items ) {
