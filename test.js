@@ -24,12 +24,31 @@ describe( "error", function () {
     })
 })
 
+describe( "retry", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+    }
+    var _err = { message: 'retryError' };
+    var response = { "myApp": { error: _err, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source ) )
+    after( reset )
+
+    it( 'retry after specified error', function () {
+        var dataSize = Object.keys( result.data[ 0 ] ).length;
+        // the data size should be as the size of metrics + 3 columns ( date, name, id )
+        assert.equal( dataSize, METRICS.length + 3 );
+        assert.equal( result.data.length, 1 )
+    })
+})
+
 describe( "progress", function () {
     var result = {};
     var source = { 
         apps: [ "myApp" ],
     };
-    var response = { "myApp": dataGenerator( 1, null, "myApp" ) }
+    var response = { "myApp": { data: dataGenerator( 1, null ), name: "myApp" } }
 
     before( initialize( result, response, source ) )
     after( reset )
@@ -48,7 +67,7 @@ describe( "empty metric", function () {
         apps: [ "myApp" ],
     }
 
-    var response = { "myApp": dataGenerator( 1, "api_calls", "myApp" ) }
+    var response = { "myApp": { data: dataGenerator( 1, "api_calls" ), name: "myApp" } }
 
     before( initialize( result, response, source ) )
     after( reset )
@@ -68,7 +87,7 @@ describe( "appName and appId", function () {
         apps: [ "someId" ],
     }
 
-    var response = { "someId": dataGenerator( 1, null, "myApp" ) }
+    var response = { "someId": { data: dataGenerator( 1, null ), name: "myApp" } }
 
     before( initialize( result, response, source ) )
     after( reset )
@@ -88,8 +107,8 @@ describe( "collect", function () {
     }
 
     var response = { 
-        "myApp1": dataGenerator( 100, null, "myApp1" ),
-        "myApp2": dataGenerator( 100, null, "myApp2" )
+        "myApp1": { data: dataGenerator( 100, null ), name: "myApp1" },
+        "myApp2": { data: dataGenerator( 100, null ), name: "myApp2" }
     }
 
     before( initialize( result, response, source ) )
@@ -97,8 +116,8 @@ describe( "collect", function () {
 
     it( "should read 200 rows for two apps", function() {
         assert.equal( result.data.length, 200 );
-        assert.equal( result.data[ 0 ].appName, "myApp1" );
-        assert.equal( result.data[ 100 ].appName, "myApp2" );
+        assert.equal( result.data[ 0 ].appName, "myApp2" );
+        assert.equal( result.data[ 100 ].appName, "myApp1" );
     })
 })
 
@@ -114,18 +133,24 @@ function initialize( result, response, source ) {
             url = url.split( BASEURL )[ 1 ];
             var params = url.split( "?" )[ 0 ].split( "/" );
             var app = params[ 1 ];
-            var metric = params[ 3 ]; 
-            var res = response[ app ];
+            var metric = params[ 3 ];
+            var appData = response[ app ].data;
+            var appName = response[ app ].name;
+            var appError = response[ app ].error;
+            var res;
 
             //we are in the get apps request
             if ( app == "me" ) {
-                res = { data: res }
+                res = { data: response[ app ] }
             }
             // if there is no metric, we are in the first request so returning the name
             else if ( ! metric ) {
-                res = { name: res.name };
+                res = { name: appName };
+            } else if ( appError ) {
+                res = { error: appError };
+                response[ app ].error = null; 
             } else {
-                res.error || ( res = { data: res[ metric ] } ) 
+                res = { data: appData[ metric ] }
             }
 
             res = JSON.stringify( res )
@@ -141,13 +166,21 @@ function initialize( result, response, source ) {
             itemList: source.apps
         }
 
+        FacebookInsightStream.prototype.handleError = function ( error, retry ) {
+            if ( error.message === 'retryError' ) {
+                return retry()
+            } else {
+                this.emit( 'error', error );
+            }
+        }
+
         var testStream = new FacebookInsightStream( options )
         .on( "data", function ( chunk ) {
             result.data || ( result.data = [] );
             result.data = result.data.concat( chunk )
         })
         .on( "error", function ( error ) {
-            result.error = error;
+            result.error || ( result.error = error );
             done();
             done = function () {};
         })
@@ -170,7 +203,7 @@ function dataGenerator ( size, emptyMetric, name ) {
     METRICS.forEach( function ( metric ) {
         var values = [];
 
-        for ( var i = 0; i < size; i++ ) {
+        for ( var i = 1; i <= size; i++ ) {
             values.push( {
                 //nuiqe date for each row
                 end_time: "some_date-" + i ,
