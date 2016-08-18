@@ -22,7 +22,8 @@ describe( "Skip missing data", function () {
 
     it( 'Skip missing data', function () {
         var dataSize = Object.keys( result.data[ 0 ] ).length;
-        // the data size should be as the size of metrics + 3 columns ( date, name, id )
+        // the data size should be as the size of
+        // metrics + 2 columns ( date, name, id excluding the first metric )
         assert.equal( dataSize, METRICS.length + 2 );
         assert.equal( result.data.length, 1 )
     })
