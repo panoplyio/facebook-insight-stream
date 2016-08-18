@@ -25,12 +25,13 @@ var EDGEMAP = {
 util.inherits( FacebookInsightStream, stream.Readable )
 function FacebookInsightStream( options ) {
     stream.Readable.call( this, { objectMode: true } );
-    var isFunction = typeof options.itemList === 'function';
+    var listItems = options.itemlist;
+    var isFunction = typeof listItems === 'function';
     if ( !isFunction ) {
-        var itemList = options.itemList;
-        options.itemList = function () { return itemList }
+        listItems = function () { return options.itemList }
     }
 
+    options.listItems = listItems
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
 }
@@ -116,7 +117,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
     // options.itemlist is a function that can return either array of items or
     // or a promise that resolved with array of items
-    var itemList = options.itemList();
+    var itemList = options.listItems();
     return Promise.resolve( itemList )
         .bind( this )
         .map( this._initItem, { concurrency: 3 } )
