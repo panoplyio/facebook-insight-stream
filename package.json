@@ -22,12 +22,5 @@
   "homepage": "https://github.com/panoplyio/facebook-insight-stream#readme",
   "devDependencies": {
     "mocha": "^2.3.4"
-  },
-  "dependencies": {
-    "bluebird": "^3.4.1",
-    "extend": "^3.0.0",
-    "request": "^2.74.0",
-    "sugar": "1.4.1",
-    "util": "^0.10.3"
   }
 }
