@@ -25,7 +25,7 @@ var EDGEMAP = {
 util.inherits( FacebookInsightStream, stream.Readable )
 function FacebookInsightStream( options ) {
     stream.Readable.call( this, { objectMode: true } );
-    var listItems = options.itemlist;
+    var listItems = options.itemList;
     var isFunction = typeof listItems === 'function';
     if ( !isFunction ) {
         listItems = function () { return options.itemList }
