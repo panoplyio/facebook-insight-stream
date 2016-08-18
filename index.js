@@ -304,7 +304,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
  * Thrown error handling methos, when any part of the stream throws an error
  * it pass its error to this method, with retry function and the thrown error
  * this function decides if this error is retryable, and then retry the method
- * that generated the error by colling to retry, otherwise it emmits error.
+ * that generated the error by calling to retry, otherwise it emmits error.
  *
  * Overide this method to create your own error handling and retrying mechanism
  * 
