@@ -14,6 +14,12 @@ var Promise = require( "bluebird" );
 request = Promise.promisifyAll( request )
 
 var BASEURL = "https://graph.facebook.com/v2.5";
+// Missing data is flagged by the error code 100
+// GraphMethodException error:
+// Object with ID 'some_id' does not exist,
+// cannot be loaded due to missing permissions,
+// or does not support this operation
+var MISSING_ERROR_CODE = 100;
 
 //edge url for each node type
 var EDGEMAP = {
@@ -322,8 +328,7 @@ function SkippedError ( error ) {
 
 function errorHandler ( options, body )  {
     if ( body.error ) {
-        // Missing data is flagged by the error code 100
-        body.error.skip = options.ignoreMissing && body.error.code === 100
+        body.error.skip = options.ignoreMissing && body.error.code === MISSING_ERROR_CODE
 
         throw body.error
     } else {
