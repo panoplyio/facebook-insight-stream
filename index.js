@@ -14,6 +14,12 @@ var Promise = require( "bluebird" );
 request = Promise.promisifyAll( request )
 
 var BASEURL = "https://graph.facebook.com/v2.5";
+// Missing data is flagged by the error code 100
+// GraphMethodException error:
+// Object with ID 'some_id' does not exist,
+// cannot be loaded due to missing permissions,
+// or does not support this operation
+var MISSING_ERROR_CODE = 100;
 
 //edge url for each node type
 var EDGEMAP = {
@@ -152,7 +158,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         .bind( this )
         .get( 1 )
         .then( JSON.parse )
-        .then( errorHandler )
+        .then( errorHandler.bind( null, options ) )
         .then( function ( data ) {
             var result = {
                 id: item,
@@ -162,6 +168,9 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 result.createdTime  = data.created_time
             }
             return result
+        })
+        .catch( SkippedError, function ( error ) {
+            console.log( "facebook-insights skipped error", error );
         })
         .catch( function ( error ) {
             var retry = this._initItem.bind( this, item );
@@ -229,7 +238,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
     return request.getAsync( url )
         .get( 1 )
         .then( JSON.parse )
-        .then( errorHandler )
+        .then( errorHandler.bind( null, options ) )
         .get( "data" )
         .bind( this )
         .then( function ( data ) {
@@ -283,8 +292,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
                 }
             }
         })
-        .catch( SkipedError, function ( error ) {
-            console.log( "facebook-insights skiped error", error );    
+        .catch( SkippedError, function ( error ) {
+            console.log( "facebook-insights skipped error", error );
         })
         .then( function () {
             // remove the current paramater when done
@@ -321,12 +330,14 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
 }
 
 // predicate-based error filter 
-function SkipedError ( error ) {
+function SkippedError ( error ) {
     return error.skip === true;
 }
 
-function errorHandler ( body )  {
+function errorHandler ( options, body )  {
     if ( body.error ) {
+        body.error.skip = options.ignoreMissing && body.error.code === MISSING_ERROR_CODE
+
         throw body.error
     } else {
         return body
