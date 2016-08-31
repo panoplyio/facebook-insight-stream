@@ -170,7 +170,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
             return result
         })
         .catch( SkippedError, function ( error ) {
-            console.log( "facebook-insights skipped error", error );
+            console.warn( "facebook-insights skipped error", error );
         })
         .catch( function ( error ) {
             var retry = this._initItem.bind( this, item );
