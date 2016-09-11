@@ -293,7 +293,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             }
         })
         .catch( SkippedError, function ( error ) {
-            console.log( "facebook-insights skipped error", error );
+            console.warn( "facebook-insights skipped error", error );
         })
         .then( function () {
             // remove the current paramater when done
