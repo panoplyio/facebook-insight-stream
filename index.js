@@ -20,6 +20,7 @@ var BASEURL = "https://graph.facebook.com/v2.5";
 // cannot be loaded due to missing permissions,
 // or does not support this operation
 var MISSING_ERROR_CODE = 100;
+var NOT_SUPPORTED_CODE = 3001;
 
 //edge url for each node type
 var EDGEMAP = {
@@ -71,7 +72,7 @@ FacebookInsightStream.prototype._handleData = function ( data ) {
 }
 
 FacebookInsightStream.prototype._init = function ( callback ) {
-    var options = this.options; 
+    var options = this.options;
 
     // building url pattern for all the request
     var until = Date.now();
@@ -82,7 +83,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     until = Math.round( until / 1000 );
     since = Math.round( since / 1000 );
 
-    var path = [ 
+    var path = [
         BASEURL,
         "{id}",
         options.edge,
@@ -117,8 +118,8 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     }
 
     // this url is urlPattern shared by all the requests
-    // each request using thie pattern should replace the 
-    // {id} and {metric} place holders with real values  
+    // each request using thie pattern should replace the
+    // {id} and {metric} place holders with real values
     this.url = [ path, query ].join( "?" )
 
     // options.itemlist is a function that can return either array of items or
@@ -150,10 +151,10 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
     };
 
     var url = strReplace( "{base}/{id}?access_token={token}", model )
-    
+
     var title = "FACEBOOK " + options.node.toUpperCase();
     console.log( new Date().toISOString(), title, url )
-    
+
     return request.getAsync( url )
         .bind( this )
         .get( 1 )
@@ -181,7 +182,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
 // _collect will be called once for each metric, the insight api request
 // single api call for each metric, wich result in a list of values ( value per day)
 // so in attempt to create one table with all the metrics,
-// we are buffering each result in a key value map, with key for 
+// we are buffering each result in a key value map, with key for
 // each day in the collected time range, and appending each value
 // of the current metric to the appropriate key in the buffer.
 // finally we generating single row for each day.
@@ -209,7 +210,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         this.emit( "progress", {
             total: this.total,
             loaded: ++this.loaded,
-            message: "{{remaining}} " + options.node + "s remaining" 
+            message: "{{remaining}} " + options.node + "s remaining"
         })
         return data;
     }
@@ -256,7 +257,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         .each( function ( val ) {
             var key = val.end_time || val.time || 'lifetime';
             // when using breakdowns we get numerous results for
-            // the same date therefore we need to identify unique 
+            // the same date therefore we need to identify unique
             // keys for the buffer by the date and different breakdowns
             // we're using the '__' to later seperate the date
             Object.keys( val.breakdowns || {} ).forEach( function ( b ){
@@ -317,8 +318,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
  * that generated the error by calling to retry, otherwise it emmits error.
  *
  * Overide this method to create your own error handling and retrying mechanism
- * 
- * @param  {Error}  error 
+ *
+ * @param  {Error}  error
  * @param  {Function} retry the function that should be invoke to retry the process
  */
 FacebookInsightStream.prototype.handleError = function ( error, retry ) {
@@ -329,14 +330,16 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
     }
 }
 
-// predicate-based error filter 
+// predicate-based error filter
 function SkippedError ( error ) {
     return error.skip === true;
 }
 
 function errorHandler ( options, body )  {
     if ( body.error ) {
-        body.error.skip = options.ignoreMissing && body.error.code === MISSING_ERROR_CODE
+        body.error.skip = options.ignoreMissing
+        && (body.error.code === MISSING_ERROR_CODE)
+        || body.error.code === NOT_SUPPORTED_CODE
 
         throw body.error
     } else {
