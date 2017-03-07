@@ -29,6 +29,26 @@ describe( "Skip missing data", function () {
     })
 })
 
+describe( "Skip missing item", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ]
+    }
+    var _err = { message: 'skip error', code: 3001 };
+    var response = { "myApp": { error: _err, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source ) )
+    after( reset )
+
+    it( 'Skip missing item', function () {
+        var dataSize = Object.keys( result.data[ 0 ] ).length;
+        // the data size should be as the size of
+        // metrics + 2 columns ( date, name, id excluding the first metric )
+        assert.equal( dataSize, METRICS.length + 2 );
+        assert.equal( result.data.length, 1 )
+    })
+})
+
 describe( "error", function () {
     var result = {};
     var source = {
@@ -36,7 +56,7 @@ describe( "error", function () {
     }
     var _err = { message: "test error" };
     var response = { "myApp": { error: _err, name: "myApp" } }
-   
+
     before( initialize( result, response, source ) )
     after( reset )
 
@@ -66,7 +86,7 @@ describe( "retry", function () {
 
 describe( "progress", function () {
     var result = {};
-    var source = { 
+    var source = {
         apps: [ "myApp" ],
     };
     var response = { "myApp": { data: dataGenerator( 1, null ), name: "myApp" } }
@@ -127,7 +147,7 @@ describe( "collect", function () {
         apps: [ "myApp1", "myApp2" ],
     }
 
-    var response = { 
+    var response = {
         "myApp1": { data: dataGenerator( 100, null ), name: "myApp1" },
         "myApp2": { data: dataGenerator( 100, null ), name: "myApp2" }
     }
@@ -147,9 +167,9 @@ function initialize( result, response, source ) {
 
     result.batchCount = 0;
 
-    return function ( done ) {  
+    return function ( done ) {
 
-        request.get = function ( url, callback ) { 
+        request.get = function ( url, callback ) {
             var metric;
             url = url.split( BASEURL )[ 1 ];
             var params = url.split( "?" )[ 0 ].split( "/" );
@@ -169,15 +189,15 @@ function initialize( result, response, source ) {
                 res = { name: appName };
             } else if ( appError ) {
                 res = { error: appError };
-                response[ app ].error = null; 
+                response[ app ].error = null;
             } else {
                 res = { data: appData[ metric ] }
             }
 
             res = JSON.stringify( res )
 
-            callback( null, { 1: res } ) 
-        }  
+            callback( null, { 1: res } )
+        }
 
         var options = {
             pastdays: "30",
@@ -245,5 +265,4 @@ function dataGenerator ( size, emptyMetric, name ) {
     // also saving the app name
     data.name = name;
     return data
-} 
-
+}
