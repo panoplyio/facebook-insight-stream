@@ -337,9 +337,9 @@ function SkippedError ( error ) {
 
 function errorHandler ( options, body )  {
     if ( body.error ) {
-        body.error.skip = options.ignoreMissing
-        && (body.error.code === MISSING_ERROR_CODE)
-        || body.error.code === NOT_SUPPORTED_CODE
+        var missingItem = body.error.code === MISSING_ERROR_CODE
+        body.error.skip = (options.ignoreMissing && missingItem)
+            || body.error.code === NOT_SUPPORTED_CODE
 
         throw body.error
     } else {
