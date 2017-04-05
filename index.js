@@ -1,6 +1,6 @@
 // doc: this module is a facebook-insights read stream built over node readable stream
 // it provide stream api to read insights data from facebook accounts,
-// currently supporting only pages-insight and app-insights.
+// currently supporting only pages-insight, posts-insights and app-insights.
 
 module.exports = FacebookInsightStream;
 
@@ -13,7 +13,7 @@ var Promise = require( "bluebird" );
 
 request = Promise.promisifyAll( request )
 
-var BASEURL = "https://graph.facebook.com/v2.5";
+var BASEURL = "https://graph.facebook.com/v2.8";
 // Missing data is flagged by the error code 100
 // GraphMethodException error:
 // Object with ID 'some_id' does not exist,
