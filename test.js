@@ -3,7 +3,7 @@ var request = require( "request" );
 var Promise = require( "bluebird" );
 var FacebookInsightStream = require( "./index" );
 
-var BASEURL = "https://graph.facebook.com/v2.5";
+var BASEURL = "https://graph.facebook.com/";
 var METRICS = require( "./metric-list" );
 
 var req_get = request.get;
