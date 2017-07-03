@@ -36,7 +36,7 @@ var pageStream = new FacebookInsightStream( options )
 ### FacebookInsightStream options:
 
 * `pastdays` (string-required)#number of collected days from today e.g "30"
-* `node-req` (string-required)#type of insight one of the two ( "app", "page" )
+* `node` (string-required)#type of insight one of the two ( "app", "page" )
 * `token` (string-required)#valid facebook oAuth token with 'read_insigt' scope
 * `period` (string-required)#the time period to collect according to the relevant api
 * `metrics` (array-required)#list of metrics to collect e.g [ "page_views", "unique_users" ]
