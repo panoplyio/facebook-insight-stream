@@ -1,6 +1,6 @@
 {
   "name": "facebook-insight-stream",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
@@ -20,7 +20,13 @@
     "url": "https://github.com/panoplyio/facebook-insight-stream/issues"
   },
   "homepage": "https://github.com/panoplyio/facebook-insight-stream#readme",
+  "dependencies": {
+      "sugar": "1.4.1",
+      "extend": "3.0.0",
+      "request": "2.53.0",
+      "bluebird": "2.9.32"
+  },
   "devDependencies": {
-    "mocha": "^2.3.4"
+    "mocha": "2.3.4"
   }
 }
