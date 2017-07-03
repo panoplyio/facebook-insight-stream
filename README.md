@@ -15,6 +15,15 @@ Currently support the following insights:
 ```javascript
 var FacebookInsightStream = require( "facebook-insight-stream" );
 
+var options = {
+    pastdays: "30",
+    node: "page",
+    token: 'Replace with your facebook access token',
+    period: "day",
+    metrics: ['page_views'],
+    itemList: ['replace with your facebook page id'],
+}
+
 var pageStream = new FacebookInsightStream( options )
     //  return list of insights  e.g [ { name: "mypage", views: "10" } ]
     .on( "data", console.log )
