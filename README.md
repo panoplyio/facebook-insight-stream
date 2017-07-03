@@ -1,6 +1,6 @@
 # facebook-insight-stream
 FacebookInsightStream provide stream API, built over node-readable-stream, to read facebook insights
-using the facebook Graph API V2.5.
+using the facebook Graph API V2.8.
 Currently facebook insights api return data per metric, this module joins all the list
 to one list by the insight date.
 
@@ -18,10 +18,10 @@ var FacebookInsightStream = require( "facebook-insight-stream" );
 var options = {
     pastdays: "30",
     node: "page",
-    token: 'Replace with your facebook access token',
+    token: "Replace with your facebook access token",
     period: "day",
-    metrics: ['page_views'],
-    itemList: ['replace with your facebook page id'],
+    metrics: ["page_views"],
+    itemList: ["replace with your facebook page id"],
 }
 
 var pageStream = new FacebookInsightStream( options )
