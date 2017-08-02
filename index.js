@@ -13,7 +13,7 @@ var Promise = require( "bluebird" );
 
 request = Promise.promisifyAll( request )
 
-var BASEURL = "https://graph.facebook.com/v2.8";
+var BASEURL = "https://graph.facebook.com/v2.10";
 // Missing data is flagged by the error code 100
 // GraphMethodException error:
 // Object with ID 'some_id' does not exist,
