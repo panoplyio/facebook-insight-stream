@@ -128,10 +128,13 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     return Promise.resolve( itemList )
         .bind( this )
         .map( this._initItem, { concurrency: 3 } )
+        // Calling _initItem on each object might have resulted in some
+        // skipped objects. These will still have been returned in the mapped
+        // array as `undefined` elements. This filter removes them.
+        .filter(Boolean)
         .then( function ( items ) {
             this.items = items;
             this.events = options.events || [];
-
             this.total = items.length;
             this.loaded = 0;
             return callback();
