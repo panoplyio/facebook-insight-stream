@@ -6,7 +6,7 @@ to one list by the insight date.
 
 Currently support the following insights:
 
-* [pages-insights]( https://developers.facebook.com/docs/graph-api/reference/page/insights/ )
+* [pages-insights]( https://developers.facebook.com/docs/graph-api/reference/v2.10/page/insights/ )
 * [app-insights](https://developers.facebook.com/docs/graph-api/reference/v2.10/insights/)
 * [audience-network](https://developers.facebook.com/docs/audience-network/reporting-api)
 
