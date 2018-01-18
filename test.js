@@ -162,8 +162,42 @@ describe( "collect", function () {
     })
 })
 
+describe( "Fetch BOT", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+        ignoreMissing: true
+    }
 
-function initialize( result, response, source ) {
+    var response = { "myApp": { error: {}, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source, true ) )
+    after( reset )
+
+    it( 'Skip missing data', function () {
+        assert.equal(result.stream.url.includes('&since'), false)
+    })
+})
+
+describe( "Fetch x Days", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+        ignoreMissing: true
+    }
+
+    var response = { "myApp": { error: {}, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source ) )
+    after( reset )
+
+    it( 'Skip missing data', function () {
+        assert.equal(result.stream.url.includes('&since'), true)
+    })
+})
+
+
+function initialize( result, response, source, fetchBOT ) {
 
     result.batchCount = 0;
 
@@ -200,7 +234,7 @@ function initialize( result, response, source ) {
         }
 
         var options = {
-            pastdays: "30",
+            pastdays: fetchBOT ? undefined : "30",
             node: "app",
             period: "daily",
             metrics: METRICS,
