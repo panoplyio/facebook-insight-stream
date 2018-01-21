@@ -163,7 +163,7 @@ describe( "collect", function () {
     })
 })
 
-describe( "Fetch BOT", function () {
+describe( "Fetch beginning of time", function () {
     var result = {};
     var source = {
         apps: [ 'myApp' ],
@@ -175,12 +175,12 @@ describe( "Fetch BOT", function () {
     before( initialize( result, response, source, true ) )
     after( reset )
 
-    it( 'Fetch insights from BOT', function () {
+    it( 'Fetch insights from beginning of time', function () {
         assert.equal(calledUrl.includes('&since'), false)
     })
 })
 
-describe( "Fetch x Days", function () {
+describe( "Fetch x Days ago", function () {
     var result = {};
     var source = {
         apps: [ 'myApp' ],
@@ -192,7 +192,7 @@ describe( "Fetch x Days", function () {
     before( initialize( result, response, source ) )
     after( reset )
 
-    it( 'Fetch insights for x days', function () {
+    it( 'Fetch insights for past x days', function () {
         assert.equal(calledUrl.includes('&since'), true)
     })
 })
