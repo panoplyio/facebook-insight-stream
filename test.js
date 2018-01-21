@@ -7,6 +7,7 @@ var BASEURL = "https://graph.facebook.com/";
 var METRICS = require( "./metric-list" );
 
 var req_get = request.get;
+let calledUrl
 
 describe( "Skip missing data", function () {
     var result = {};
@@ -174,8 +175,8 @@ describe( "Fetch BOT", function () {
     before( initialize( result, response, source, true ) )
     after( reset )
 
-    it( 'Skip missing data', function () {
-        assert.equal(result.stream.url.includes('&since'), false)
+    it( 'Fetch insights from BOT', function () {
+        assert.equal(calledUrl.includes('&since'), false)
     })
 })
 
@@ -191,8 +192,8 @@ describe( "Fetch x Days", function () {
     before( initialize( result, response, source ) )
     after( reset )
 
-    it( 'Skip missing data', function () {
-        assert.equal(result.stream.url.includes('&since'), true)
+    it( 'Fetch insights for x days', function () {
+        assert.equal(calledUrl.includes('&since'), true)
     })
 })
 
@@ -205,6 +206,7 @@ function initialize( result, response, source, fetchBOT ) {
 
         request.get = function ( url, callback ) {
             var metric;
+            calledUrl = url
             url = url.split( BASEURL )[ 1 ];
             var params = url.split( "?" )[ 0 ].split( "/" );
             var app = params[ 1 ];
