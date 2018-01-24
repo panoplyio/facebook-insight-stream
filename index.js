@@ -10,6 +10,7 @@ var stream = require( "stream" );
 var extend = require( "extend" );
 var request = require( "request" );
 var Promise = require( "bluebird" );
+const queryString = require('query-string')
 
 request = Promise.promisifyAll( request )
 
@@ -90,23 +91,17 @@ FacebookInsightStream.prototype._init = function ( callback ) {
         "{metric}",
     ].join( "/" )
 
-    var query = [
-        "access_token=" + options.token,
-        "period=" + options.period,
-        "since=" + since,
-        "until=" + until,
-    ].join( "&" );
-
     var hasEvents = options.events && options.events.length;
     var breakdowns = options.breakdowns;
 
-    if ( hasEvents ) {
-        query += "&event_name={ev}"
-    }
-
-    if ( options.aggregate ) {
-        query += "&aggregateBy={agg}";
-    }
+    let query = queryString.stringify({
+        since: options.pastdays ? since :  undefined,
+        until: until,
+        period: options.period,
+        access_token: options.token,
+        event_name: hasEvents ? '{ev}' : undefined,
+        aggregateBy: options.aggregate ? '{agg}' : undefined
+    })
 
     if ( breakdowns && breakdowns.length ) {
         for ( var i = 0; i < breakdowns.length; i += 1 ) {

@@ -7,6 +7,7 @@ var BASEURL = "https://graph.facebook.com/";
 var METRICS = require( "./metric-list" );
 
 var req_get = request.get;
+let calledUrl
 
 describe( "Skip missing data", function () {
     var result = {};
@@ -162,8 +163,42 @@ describe( "collect", function () {
     })
 })
 
+describe( "Fetch beginning of time", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+        ignoreMissing: true
+    }
 
-function initialize( result, response, source ) {
+    var response = { "myApp": { error: {}, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source, true ) )
+    after( reset )
+
+    it( 'Fetch insights from beginning of time', function () {
+        assert.equal(calledUrl.includes('&since'), false)
+    })
+})
+
+describe( "Fetch x Days ago", function () {
+    var result = {};
+    var source = {
+        apps: [ 'myApp' ],
+        ignoreMissing: true
+    }
+
+    var response = { "myApp": { error: {}, name: "myApp", data: dataGenerator( 1, null ) } }
+
+    before( initialize( result, response, source ) )
+    after( reset )
+
+    it( 'Fetch insights for past x days', function () {
+        assert.equal(calledUrl.includes('&since'), true)
+    })
+})
+
+
+function initialize( result, response, source, fetchBOT ) {
 
     result.batchCount = 0;
 
@@ -171,6 +206,7 @@ function initialize( result, response, source ) {
 
         request.get = function ( url, callback ) {
             var metric;
+            calledUrl = url
             url = url.split( BASEURL )[ 1 ];
             var params = url.split( "?" )[ 0 ].split( "/" );
             var app = params[ 1 ];
@@ -200,7 +236,7 @@ function initialize( result, response, source ) {
         }
 
         var options = {
-            pastdays: "30",
+            pastdays: fetchBOT ? undefined : "30",
             node: "app",
             period: "daily",
             metrics: METRICS,
