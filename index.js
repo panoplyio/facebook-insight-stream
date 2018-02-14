@@ -141,11 +141,12 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 }
 
 FacebookInsightStream.prototype._initItem = function ( item ) {
+    var id = typeof item === 'string' ? item : item.id
     var options = this.options;
     var model = {
         base: BASEURL,
-        id: item,
-        token: options.token
+        id: id,
+        token: item.token || options.token
     };
 
     var url = strReplace( "{base}/{id}?access_token={token}", model )
@@ -153,15 +154,16 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
     var title = "FACEBOOK " + options.node.toUpperCase();
     console.log( new Date().toISOString(), title, url )
 
-    return request.getAsync( url )
+    return FacebookInsightStream._apiCall(url)
         .bind( this )
         .get( 1 )
         .then( JSON.parse )
         .then( errorHandler.bind( null, options ) )
         .then( function ( data ) {
             var result = {
-                id: item,
-                name: data.name || data.message || data.story
+                id: id,
+                name: data.name || data.message || data.story,
+                token: item.token || options.token
             }
             if ( options.node === 'post' ) {
                 result.createdTime  = data.created_time
@@ -229,12 +231,11 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         extend( model, { ev: _ev, agg: _agg } );
     }
 
-    var url = strReplace( this.url, model );
+    var url = this.url + '&access_token=' + item.token
+    url = strReplace( url, model );
     var title = "FACEBOOK " + options.node.toUpperCase();
 
-    console.log( new Date().toISOString(), title, url );
-
-    return request.getAsync( url )
+    return FacebookInsightStream._apiCall(url)
         .get( 1 )
         .then( JSON.parse )
         .then( errorHandler.bind( null, options ) )
@@ -326,6 +327,17 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
     } else {
         this.emit( 'error', error );
     }
+}
+
+/**
+ * Helper function to make api calls - this abstraction is used to
+ * simplify testing
+ *
+ * @param  {String}  url
+ * @returns  {Promise}
+ */
+FacebookInsightStream._apiCall = function (url) {
+    return request.getAsync( url )
 }
 
 // predicate-based error filter
