@@ -1,5 +1,6 @@
 var assert = require( "assert" );
 var request = require( "request" );
+var sinon = require( "sinon" );
 var Promise = require( "bluebird" );
 var FacebookInsightStream = require( "./index" );
 
@@ -197,6 +198,43 @@ describe( "Fetch x Days ago", function () {
     })
 })
 
+describe( 'Multiple access tokens', function () {
+    var sandbox = sinon.sandbox.create()
+    var source = {
+        apps: [{id: 'myApp1', token: 'tok1'}, {id: 'myApp2', token: 'tok2'}],
+    }
+    var stream;
+    var options = {
+        pastdays: '30',
+        node: 'posts',
+        period: 'daily',
+        metrics: METRICS,
+        itemList: source.apps
+    }
+
+    before(() => {
+        stream = new FacebookInsightStream( options )
+    })
+    after(() => {
+        sandbox.restore()
+    })
+
+    it( 'init each item with its own token', function(done) {
+        let requests = []
+        let initItemStub = sandbox.stub(stream, '_initItem').callsFake(url => {
+            requests.push(url)
+            return Promise.resolve()
+        })
+        stream.on( 'data', () => {})
+            .on( 'end', function () {
+                let tokens = new Set(requests.each(req => req.token))
+                assert.equal(requests.length, tokens.size)
+                done()
+            })
+    })
+
+})
+
 
 function initialize( result, response, source, fetchBOT ) {
 
@@ -237,7 +275,7 @@ function initialize( result, response, source, fetchBOT ) {
 
         var options = {
             pastdays: fetchBOT ? undefined : "30",
-            node: "app",
+            node: source.node || 'app',
             period: "daily",
             metrics: METRICS,
             itemList: source.apps,
