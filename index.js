@@ -1,7 +1,3 @@
-// doc: this module is a facebook-insights read stream built over node readable
-// stream. It provide stream api to read insights data from facebook accounts,
-// currently supporting only pages-insight, posts-insights and app-insights.
-
 module.exports = FacebookInsightStream;
 
 var util = require( 'util' );
@@ -23,7 +19,7 @@ var BASEURL = 'https://graph.facebook.com/v2.10';
 var MISSING_ERROR_CODE = 100;
 var NOT_SUPPORTED_CODE = 3001;
 
-//edge url for each node type
+// edge url for each node type
 var EDGEMAP = {
     page: 'insights',
     app: 'app_insights',
@@ -31,12 +27,16 @@ var EDGEMAP = {
 }
 
 util.inherits( FacebookInsightStream, stream.Readable )
+/** this module is a facebook-insights read stream built over node readable
+ * stream. It provide stream api to read insights data from facebook accounts,
+ * currently supporting only pages-insight, posts-insights and app-insights.
+*/
 function FacebookInsightStream( options ) {
     stream.Readable.call( this, { objectMode: true } );
     var listItems = options.itemList;
     var isFunction = typeof listItems === 'function';
     if ( !isFunction ) {
-        listItems = function () { return options.itemList }
+        listItems = () => options.itemList
     }
 
     options.listItems = listItems
@@ -95,7 +95,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     var breakdowns = options.breakdowns;
 
     let query = queryString.stringify({
-        since: options.pastdays ? since :  undefined,
+        since: options.pastdays ? since : undefined,
         until: until,
         period: options.period,
         access_token: options.token,
@@ -166,7 +166,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
                 token: item.token || options.token
             }
             if ( options.node === 'post' ) {
-                result.createdTime  = data.created_time
+                result.createdTime = data.created_time
             }
             return result
         })
@@ -179,14 +179,14 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         })
 }
 
-// _collect will be called once for each metric, the insight api request
-// single api call for each metric, wich result in a list of values ( value per day)
-// so in attempt to create one table with all the metrics,
-// we are buffering each result in a key value map, with key for
-// each day in the collected time range, and appending each value
-// of the current metric to the appropriate key in the buffer.
-// finally we generating single row for each day.
-
+/* _collect will be called once for each metric, the insight api request
+ * single api call for each metric, wich result in a list of values
+ * (value per day) so in attempt to create one table with all the metrics,
+ * we are buffering each result in a key value map, with key for
+ * each day in the collected time range, and appending each value
+ * of the current metric to the appropriate key in the buffer.
+ * finally we generating single row for each day.
+ */
 FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, events ) {
     var options = this.options;
     var hasEvents = events && events.length;
@@ -235,6 +235,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
     url = strReplace( url, model );
     var title = 'FACEBOOK ' + options.node.toUpperCase();
 
+    console.log( new Date().toISOString(), title, url );
+
     return FacebookInsightStream._apiCall(url)
         .get( 1 )
         .then( JSON.parse )
@@ -245,7 +247,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             // in case that there is no data for a given metric
             // we will skip to the next metric
             if ( ! data.length ) {
-                var error = new Error( 'No data found for the metric ' + _metric );
+                var error = new Error('No data found for metric ' + _metric);
                 error.skip = true;
                 throw error;
             }
@@ -259,7 +261,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             // the same date therefore we need to identify unique
             // keys for the buffer by the date and different breakdowns
             // we're using the '__' to later seperate the date
-            Object.keys( val.breakdowns || {} ).forEach( function ( b ){
+            Object.keys( val.breakdowns || {} ).forEach( function ( b ) {
                 key += '__{breakdown}'.assign( {
                     breakdown: val.breakdowns[ b ]
                 });
@@ -305,7 +307,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             return this._collect( metrics, item, buffer, events );
         })
         .catch( function ( error ) {
-            var retry = this._collect.bind( this, metrics, item, buffer, events );
+            var retry = this._collect.bind(this, metrics, item, buffer, events);
             return this.handleError( error, retry );
         })
 }
@@ -319,7 +321,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
  * Overide this method to create your own error handling and retrying mechanism
  *
  * @param  {Error}  error
- * @param  {Function} retry the function that should be invoke to retry the process
+ * @param  {Function} retry - the function that should be invoked on retry
  */
 FacebookInsightStream.prototype.handleError = function ( error, retry ) {
     if ( error.retry === true ) {
@@ -340,12 +342,15 @@ FacebookInsightStream._apiCall = function (url) {
     return request.getAsync( url )
 }
 
-// predicate-based error filter
+/**
+*/
 function SkippedError ( error ) {
     return error.skip === true;
 }
 
-function errorHandler ( options, body )  {
+/**
+*/
+function errorHandler ( options, body ) {
     if ( body.error ) {
         var missingItem = body.error.code === MISSING_ERROR_CODE
         body.error.skip = (options.ignoreMissing && missingItem)
@@ -357,6 +362,8 @@ function errorHandler ( options, body )  {
     }
 }
 
+/**
+*/
 function strReplace ( string, model ) {
     Object.keys( model ).each( function ( name ) {
         string = string.replace( '{' + name + '}', model[ name ] );
@@ -365,6 +372,8 @@ function strReplace ( string, model ) {
     return string;
 }
 
+/**
+*/
 function aggregationType ( ev ) {
     var events = [ 'fb_ad_network_imp', 'fb_ad_network_click' ];
 
