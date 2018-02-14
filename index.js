@@ -105,10 +105,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
     if ( breakdowns && breakdowns.length ) {
         for ( var i = 0; i < breakdowns.length; i += 1 ) {
-            query += '&breakdowns[{index}]={breakdown}'.assign( {
-                index: i,
-                breakdown: breakdowns[ i ]
-            });
+            query += `&breakdowns[${i}]=${breakdowns[i]}`
         }
     }
 
@@ -262,9 +259,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             // keys for the buffer by the date and different breakdowns
             // we're using the '__' to later seperate the date
             Object.keys( val.breakdowns || {} ).forEach( function ( b ) {
-                key += '__{breakdown}'.assign( {
-                    breakdown: val.breakdowns[ b ]
-                });
+                key += `__${val.breakdowns[b]}`
             });
 
             buffer[ key ] || ( buffer[ key ] = {} )
