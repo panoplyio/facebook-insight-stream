@@ -28,6 +28,7 @@
     "sugar": "1.4.1"
   },
   "devDependencies": {
-    "mocha": "2.3.4"
+    "mocha": "2.3.4",
+    "sinon": "4.3.0"
   }
 }
