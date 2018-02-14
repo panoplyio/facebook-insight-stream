@@ -1,20 +1,20 @@
-// doc: this module is a facebook-insights read stream built over node readable stream
-// it provide stream api to read insights data from facebook accounts,
+// doc: this module is a facebook-insights read stream built over node readable
+// stream. It provide stream api to read insights data from facebook accounts,
 // currently supporting only pages-insight, posts-insights and app-insights.
 
 module.exports = FacebookInsightStream;
 
-var util = require( "util" );
-var sugar = require( "sugar" );
-var stream = require( "stream" );
-var extend = require( "extend" );
-var request = require( "request" );
-var Promise = require( "bluebird" );
+var util = require( 'util' );
+var sugar = require( 'sugar' );
+var stream = require( 'stream' );
+var extend = require( 'extend' );
+var request = require( 'request' );
+var Promise = require( 'bluebird' );
 const queryString = require('query-string')
 
 request = Promise.promisifyAll( request )
 
-var BASEURL = "https://graph.facebook.com/v2.10";
+var BASEURL = 'https://graph.facebook.com/v2.10';
 // Missing data is flagged by the error code 100
 // GraphMethodException error:
 // Object with ID 'some_id' does not exist,
@@ -25,9 +25,9 @@ var NOT_SUPPORTED_CODE = 3001;
 
 //edge url for each node type
 var EDGEMAP = {
-    page: "insights",
-    app: "app_insights",
-    post: "insights"
+    page: 'insights',
+    app: 'app_insights',
+    post: 'insights'
 }
 
 util.inherits( FacebookInsightStream, stream.Readable )
@@ -86,10 +86,10 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
     var path = [
         BASEURL,
-        "{id}",
+        '{id}',
         options.edge,
-        "{metric}",
-    ].join( "/" )
+        '{metric}',
+    ].join( '/' )
 
     var hasEvents = options.events && options.events.length;
     var breakdowns = options.breakdowns;
@@ -105,7 +105,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
 
     if ( breakdowns && breakdowns.length ) {
         for ( var i = 0; i < breakdowns.length; i += 1 ) {
-            query += "&breakdowns[{index}]={breakdown}".assign( {
+            query += '&breakdowns[{index}]={breakdown}'.assign( {
                 index: i,
                 breakdown: breakdowns[ i ]
             });
@@ -115,7 +115,7 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     // this url is urlPattern shared by all the requests
     // each request using thie pattern should replace the
     // {id} and {metric} place holders with real values
-    this.url = [ path, query ].join( "?" )
+    this.url = [ path, query ].join( '?' )
 
     // options.itemlist is a function that can return either array of items or
     // or a promise that resolved with array of items
@@ -149,9 +149,9 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         token: item.token || options.token
     };
 
-    var url = strReplace( "{base}/{id}?access_token={token}", model )
+    var url = strReplace( '{base}/{id}?access_token={token}', model )
 
-    var title = "FACEBOOK " + options.node.toUpperCase();
+    var title = 'FACEBOOK ' + options.node.toUpperCase();
     console.log( new Date().toISOString(), title, url )
 
     return FacebookInsightStream._apiCall(url)
@@ -171,7 +171,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
             return result
         })
         .catch( SkippedError, function ( error ) {
-            console.warn( "facebook-insights skipped error", error );
+            console.warn( 'facebook-insights skipped error', error );
         })
         .catch( function ( error ) {
             var retry = this._initItem.bind( this, item );
@@ -197,9 +197,9 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
             // if the key is constructed with numerous attributes,
             // take the datetime information
-            row.date = key.split( "__" )[ 0 ];
-            row[ options.node + "Id" ] = item.id;
-            row[ options.node + "Name" ] = item.name;
+            row.date = key.split( '__' )[ 0 ];
+            row[ options.node + 'Id' ] = item.id;
+            row[ options.node + 'Name' ] = item.name;
             // set created_time for posts
             if ( options.node === 'post' ) {
                 row[ 'created_time' ] = item.createdTime;
@@ -207,10 +207,10 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             return row;
         })
 
-        this.emit( "progress", {
+        this.emit( 'progress', {
             total: this.total,
             loaded: ++this.loaded,
-            message: "{{remaining}} " + options.node + "s remaining"
+            message: '{{remaining}} ' + options.node + 's remaining'
         })
         return data;
     }
@@ -233,19 +233,19 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
     var url = this.url + '&access_token=' + item.token
     url = strReplace( url, model );
-    var title = "FACEBOOK " + options.node.toUpperCase();
+    var title = 'FACEBOOK ' + options.node.toUpperCase();
 
     return FacebookInsightStream._apiCall(url)
         .get( 1 )
         .then( JSON.parse )
         .then( errorHandler.bind( null, options ) )
-        .get( "data" )
+        .get( 'data' )
         .bind( this )
         .then( function ( data ) {
             // in case that there is no data for a given metric
             // we will skip to the next metric
             if ( ! data.length ) {
-                var error = new Error( "No data found for the metric " + _metric );
+                var error = new Error( 'No data found for the metric ' + _metric );
                 error.skip = true;
                 throw error;
             }
@@ -260,7 +260,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             // keys for the buffer by the date and different breakdowns
             // we're using the '__' to later seperate the date
             Object.keys( val.breakdowns || {} ).forEach( function ( b ){
-                key += "__{breakdown}".assign( {
+                key += '__{breakdown}'.assign( {
                     breakdown: val.breakdowns[ b ]
                 });
             });
@@ -293,7 +293,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             }
         })
         .catch( SkippedError, function ( error ) {
-            console.warn( "facebook-insights skipped error", error );
+            console.warn( 'facebook-insights skipped error', error );
         })
         .then( function () {
             // remove the current paramater when done
@@ -359,19 +359,19 @@ function errorHandler ( options, body )  {
 
 function strReplace ( string, model ) {
     Object.keys( model ).each( function ( name ) {
-        string = string.replace( "{" + name + "}", model[ name ] );
+        string = string.replace( '{' + name + '}', model[ name ] );
     })
 
     return string;
 }
 
 function aggregationType ( ev ) {
-    var events = [ "fb_ad_network_imp", "fb_ad_network_click" ];
+    var events = [ 'fb_ad_network_imp', 'fb_ad_network_click' ];
 
     var shouldUseCount = ev && events.indexOf( ev ) > -1;
     if ( shouldUseCount ) {
-        return "COUNT"
+        return 'COUNT'
     }
 
-    return "SUM";
+    return 'SUM';
 }
