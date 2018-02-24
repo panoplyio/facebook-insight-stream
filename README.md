@@ -21,7 +21,7 @@ var options = {
     token: "Replace with your facebook access token",
     period: "day",
     metrics: ["page_views"],
-    itemList: ["replace with your facebook page id"],
+    itemList: [{id: page_id, token: page_token}],
 }
 
 var pageStream = new FacebookInsightStream( options )
