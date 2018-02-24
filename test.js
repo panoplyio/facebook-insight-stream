@@ -217,24 +217,39 @@ describe( 'Multiple access tokens', function () {
         itemList: source.apps
     }
 
-    before(() => {
+    beforeEach(() => {
         stream = new FacebookInsightStream( options )
     })
-    after(() => {
+    afterEach(() => {
         sandbox.restore()
     })
 
     it( 'init each item with its own token', function(done) {
         let requests = []
-        let initItemStub = sandbox.stub(stream, '_initItem').callsFake(url => {
-            requests.push(url)
+        let initItemStub = sandbox.stub(stream, '_initItem').callsFake(item => {
+            requests.push(item)
             return Promise.resolve()
         })
-        stream.on( 'data', () => {})
+        let ds  = []
+        stream.on( 'data', d => ds.push(d) )
             .on( 'end', function () {
-                let tokens = new Set(requests.each(req => req.token))
+                let tokens = new Set(requests.map(req => req.token))
                 assert.equal(requests.length, tokens.size)
                 done()
+            })
+    })
+
+    it( 'uses item token', function() {
+        let token = 'thetoken'
+        let calledUrl = null
+        sandbox.stub(FacebookInsightStream, '_apiCall').callsFake(url => {
+            calledUrl = url
+            return Promise.resolve([null,'{"data":{}}']);
+        })
+        stream.url = 'https://fb.com/v2.10/123?access_token=&agg=oog&foo=bar'
+        return stream._collect([], {token: token}, {}, [{}])
+            .then(() => {
+                assert(calledUrl.indexOf(token) > -1)
             })
     })
 
