@@ -2,6 +2,7 @@ var assert = require( "assert" );
 var request = require( "request" );
 var sinon = require( "sinon" );
 var Promise = require( "bluebird" );
+const queryString = require('querystring')
 var FacebookInsightStream = require( "./index" );
 
 var BASEURL = "https://graph.facebook.com/";
@@ -177,7 +178,9 @@ describe( "Fetch beginning of time", function () {
     after( reset )
 
     it( 'Fetch insights from beginning of time', function () {
-        assert.equal(calledUrl.includes('since='), false)
+        const parts = calledUrl.split('?')
+        const parsed = queryString.parse(parts[1])
+        assert.equal(Boolean(parsed.since), false)
     })
 })
 
@@ -194,7 +197,9 @@ describe( "Fetch x Days ago", function () {
     after( reset )
 
     it( 'Fetch insights for past x days', function () {
-        assert.equal(calledUrl.includes('since='), true)
+        const parts = calledUrl.split('?')
+        const parsed = queryString.parse(parts[1])
+        assert.equal(Boolean(parsed.since), true)
     })
 })
 

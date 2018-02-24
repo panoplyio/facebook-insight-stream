@@ -6,7 +6,7 @@ var stream = require( 'stream' );
 var extend = require( 'extend' );
 var request = require( 'request' );
 var Promise = require( 'bluebird' );
-const queryString = require('query-string')
+const queryString = require('querystring')
 
 request = Promise.promisifyAll( request )
 
@@ -228,8 +228,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         extend( model, { ev: _ev, agg: _agg } );
     }
 
-    var url = this.url + '&access_token=' + item.token
-    url = strReplace( url, model );
+    url = url + '&access_token=' + item.token
+    var url = strReplace( this.url, model );
     var title = 'FACEBOOK ' + options.node.toUpperCase();
 
     console.log( new Date().toISOString(), title, url );
@@ -376,6 +376,5 @@ function aggregationType ( ev ) {
     if ( shouldUseCount ) {
         return 'COUNT'
     }
-
     return 'SUM';
 }
