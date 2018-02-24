@@ -177,7 +177,7 @@ describe( "Fetch beginning of time", function () {
     after( reset )
 
     it( 'Fetch insights from beginning of time', function () {
-        assert.equal(calledUrl.includes('&since'), false)
+        assert.equal(calledUrl.includes('since='), false)
     })
 })
 
@@ -194,7 +194,7 @@ describe( "Fetch x Days ago", function () {
     after( reset )
 
     it( 'Fetch insights for past x days', function () {
-        assert.equal(calledUrl.includes('&since'), true)
+        assert.equal(calledUrl.includes('since='), true)
     })
 })
 
