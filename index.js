@@ -6,7 +6,6 @@ var stream = require( 'stream' );
 var extend = require( 'extend' );
 var request = require( 'request' );
 var Promise = require( 'bluebird' );
-const queryString = require('querystring')
 
 request = Promise.promisifyAll( request )
 
@@ -94,14 +93,18 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     var hasEvents = options.events && options.events.length;
     var breakdowns = options.breakdowns;
 
-    let query = queryString.stringify({
-        since: options.pastdays ? since : undefined,
+    let queryObj = {
+        since: options.pastdays ? since : '',
         until: until,
         period: options.period,
         access_token: options.token,
-        event_name: hasEvents ? '{ev}' : undefined,
-        aggregateBy: options.aggregate ? '{agg}' : undefined
-    })
+        event_name: hasEvents ? '{ev}' : '',
+        aggregateBy: options.aggregate ? '{agg}' : ''
+    }
+    // Build a query string from the object keys
+    let query = Object.keys(queryObj).map(key => {
+        return `${key}=${queryObj[key]}`
+    }).join('&')
 
     if ( breakdowns && breakdowns.length ) {
         for ( var i = 0; i < breakdowns.length; i += 1 ) {
@@ -146,7 +149,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
         token: item.token || options.token
     };
 
-    var url = strReplace( '{base}/{id}?access_token={token}', model )
+    var url = `${model.base}/${model.id}?access_token=${model.token}`
 
     var title = 'FACEBOOK ' + options.node.toUpperCase();
     console.log( new Date().toISOString(), title, url )
@@ -228,8 +231,8 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
         extend( model, { ev: _ev, agg: _agg } );
     }
 
-    url = url + '&access_token=' + item.token
     var url = strReplace( this.url, model );
+    url = url.replace(/access_token=.*?&/, `access_token=${item.token}&`)
     var title = 'FACEBOOK ' + options.node.toUpperCase();
 
     console.log( new Date().toISOString(), title, url );
