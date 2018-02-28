@@ -1,6 +1,8 @@
 var assert = require( "assert" );
 var request = require( "request" );
+var sinon = require( "sinon" );
 var Promise = require( "bluebird" );
+const queryString = require('querystring')
 var FacebookInsightStream = require( "./index" );
 
 var BASEURL = "https://graph.facebook.com/";
@@ -176,7 +178,9 @@ describe( "Fetch beginning of time", function () {
     after( reset )
 
     it( 'Fetch insights from beginning of time', function () {
-        assert.equal(calledUrl.includes('&since'), false)
+        const parts = calledUrl.split('?')
+        const parsed = queryString.parse(parts[1])
+        assert.equal(Boolean(parsed.since), false)
     })
 })
 
@@ -193,8 +197,62 @@ describe( "Fetch x Days ago", function () {
     after( reset )
 
     it( 'Fetch insights for past x days', function () {
-        assert.equal(calledUrl.includes('&since'), true)
+        const parts = calledUrl.split('?')
+        const parsed = queryString.parse(parts[1])
+        assert.equal(Boolean(parsed.since), true)
     })
+})
+
+describe( 'Multiple access tokens', function () {
+    var sandbox = sinon.sandbox.create()
+    var source = {
+        apps: [{id: 'myApp1', token: 'tok1'}, {id: 'myApp2', token: 'tok2'}],
+    }
+    var stream;
+    var options = {
+        pastdays: '30',
+        node: 'posts',
+        period: 'daily',
+        metrics: METRICS,
+        itemList: source.apps
+    }
+
+    beforeEach(() => {
+        stream = new FacebookInsightStream( options )
+    })
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it( 'init each item with its own token', function(done) {
+        let requests = []
+        let initItemStub = sandbox.stub(stream, '_initItem').callsFake(item => {
+            requests.push(item)
+            return Promise.resolve()
+        })
+        let ds  = []
+        stream.on( 'data', d => ds.push(d) )
+            .on( 'end', function () {
+                let tokens = new Set(requests.map(req => req.token))
+                assert.equal(requests.length, tokens.size)
+                done()
+            })
+    })
+
+    it( 'uses item token', function() {
+        let token = 'thetoken'
+        let calledUrl = null
+        sandbox.stub(FacebookInsightStream, '_apiCall').callsFake(url => {
+            calledUrl = url
+            return Promise.resolve([null,'{"data":{}}']);
+        })
+        stream.url = 'https://fb.com/v2.10/123?access_token=&agg=oog&foo=bar'
+        return stream._collect([], {token: token}, {}, [{}])
+            .then(() => {
+                assert(calledUrl.indexOf(token) > -1)
+            })
+    })
+
 })
 
 
@@ -237,7 +295,7 @@ function initialize( result, response, source, fetchBOT ) {
 
         var options = {
             pastdays: fetchBOT ? undefined : "30",
-            node: "app",
+            node: source.node || 'app',
             period: "daily",
             metrics: METRICS,
             itemList: source.apps,

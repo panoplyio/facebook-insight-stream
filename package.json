@@ -1,6 +1,6 @@
 {
   "name": "facebook-insight-stream",
-  "version": "1.0.12",
+  "version": "2.0.0",
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
@@ -23,11 +23,11 @@
   "dependencies": {
     "bluebird": "2.9.32",
     "extend": "3.0.0",
-    "query-string": "^5.0.1",
     "request": "2.53.0",
     "sugar": "1.4.1"
   },
   "devDependencies": {
-    "mocha": "2.3.4"
+    "mocha": "2.3.4",
+    "sinon": "4.3.0"
   }
 }
