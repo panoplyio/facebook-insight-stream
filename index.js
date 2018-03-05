@@ -154,7 +154,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
     var title = 'FACEBOOK ' + options.node.toUpperCase();
     console.log( new Date().toISOString(), title, url )
 
-    return FacebookInsightStream._apiCall(url)
+    return FacebookInsightStream.apiCall(url)
         .bind( this )
         .get( 1 )
         .then( JSON.parse )
@@ -237,7 +237,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
     console.log( new Date().toISOString(), title, url );
 
-    return FacebookInsightStream._apiCall(url)
+    return FacebookInsightStream.apiCall(url)
         .get( 1 )
         .then( JSON.parse )
         .then( errorHandler.bind( null, options ) )
@@ -336,7 +336,7 @@ FacebookInsightStream.prototype.handleError = function ( error, retry ) {
  * @param  {String}  url
  * @returns  {Promise}
  */
-FacebookInsightStream._apiCall = function (url) {
+FacebookInsightStream.apiCall = function (url) {
     return request.getAsync( url )
 }
 

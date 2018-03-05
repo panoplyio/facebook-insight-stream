@@ -242,7 +242,7 @@ describe( 'Multiple access tokens', function () {
     it( 'uses item token', function() {
         let token = 'thetoken'
         let calledUrl = null
-        sandbox.stub(FacebookInsightStream, '_apiCall').callsFake(url => {
+        sandbox.stub(FacebookInsightStream, 'apiCall').callsFake(url => {
             calledUrl = url
             return Promise.resolve([null,'{"data":{}}']);
         })
