@@ -1,6 +1,6 @@
 {
   "name": "facebook-insight-stream",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "facebook",
     "insights"
   ],
-  "author": "Oshri Bienhaker",
+  "author": "Panoply Dev Team",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/panoplyio/facebook-insight-stream/issues"
