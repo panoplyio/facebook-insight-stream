@@ -17,11 +17,11 @@ var FacebookInsightStream = require( "facebook-insight-stream" );
 
 var options = {
     pastdays: "30",
-    node: "page",
+    node: "page" OR "post" OR "app",
     token: "Replace with your facebook access token",
     period: "day",
     metrics: ["page_views"],
-    itemList: [{id: page_id, token: page_token}],
+    itemList: 'See comment below'
 }
 
 var pageStream = new FacebookInsightStream( options )
@@ -32,6 +32,18 @@ var pageStream = new FacebookInsightStream( options )
     // progress status  { total: "2", loaded: "1", message: "{{remaining}} pages remain"  }
     .on( "progress", console.log )
 ```
+
+### Item list
+
+The `itemList` parameter can have be passed in two forms:
+
+1. An array of page ids. Eg: `["PAGE_ID1", "PAGE_ID2", "PAGE_ID3"]`.
+    This can be used when fetching nodes of type `post` or `app`.
+2. An array of page objects including id and page access_tokens. Eg:
+    `[{id: "PAGE_ID1", token: "ABC"}, {id: "PAGE_ID2", token: "DEF"}]`
+    When an access_token is passed with each object - it is used for the requests
+    instead of the top level user token.
+    This can be used when fetching nodes of type `page`.
 
 ### FacebookInsightStream options:
 
