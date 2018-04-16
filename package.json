@@ -1,6 +1,6 @@
 {
   "name": "facebook-insight-stream",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
