@@ -1,5 +1,5 @@
 # facebook-insight-stream
-FacebookInsightStream provide stream API, built over node-readable-stream, to read facebook insights
+FacebookInsightStream provides stream API, built over node-readable-stream, to read facebook insights
 using the facebook Graph API V2.10.
 Currently facebook insights api return data per metric, this module joins all the list
 to one list by the insight date.
