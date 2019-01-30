@@ -4,7 +4,7 @@
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
-    "test": "node_modules/mocha/bin/mocha"
+    "test": "NODE_ENV=test node_modules/mocha/bin/mocha"
   },
   "repository": {
     "type": "git",
