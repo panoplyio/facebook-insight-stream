@@ -1,10 +1,10 @@
 {
   "name": "facebook-insight-stream",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Readable stream for reading facebook insights",
   "main": "index.js",
   "scripts": {
-    "test": "node_modules/mocha/bin/mocha"
+    "test": "NODE_ENV=test node_modules/mocha/bin/mocha"
   },
   "repository": {
     "type": "git",
