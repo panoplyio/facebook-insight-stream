@@ -178,8 +178,10 @@ describe( "Fetch beginning of time", function () {
     after( reset )
 
     it( 'Fetch insights from beginning of time', function () {
+        console.log('calledUrl: ', calledUrl)
         const parts = calledUrl.split('?')
         const parsed = queryString.parse(parts[1])
+        console.log('parsed: ', parsed)
         assert.equal(Boolean(parsed.since), false)
     })
 })
@@ -247,7 +249,7 @@ describe( 'Multiple access tokens', function () {
             return Promise.resolve([null,'{"data":{}}']);
         })
         stream.url = 'https://fb.com/v2.10/123?access_token=&agg=oog&foo=bar'
-        return stream._collect([], {token: token}, {}, [{}])
+        return stream._collect([], {token: token}, {}, [{}], {since: '', until: ''})
             .then(() => {
                 assert(calledUrl.indexOf(token) > -1)
             })
