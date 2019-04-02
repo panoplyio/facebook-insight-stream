@@ -6,6 +6,7 @@ var stream = require( 'stream' );
 var extend = require( 'extend' );
 var request = require( 'request' );
 var Promise = require( 'bluebird' );
+var moment = require('moment')
 
 request = Promise.promisifyAll( request )
 
@@ -17,6 +18,10 @@ var BASEURL = 'https://graph.facebook.com/v3.2';
 // or does not support this operation
 var MISSING_ERROR_CODE = 100;
 var NOT_SUPPORTED_CODE = 3001;
+
+// Facebook only allow requesting 90 days of data when
+// using since and until parameters
+const FB_MAX_DATE_RANGE = 90
 
 // edge url for each node type
 var EDGEMAP = {
@@ -41,6 +46,9 @@ function FacebookInsightStream( options ) {
     options.listItems = listItems
     options.edge = EDGEMAP[ options.node ];
     this.options = options;
+
+    this.dateRanges = dateRanges(this.options.pastdays)
+    this.remainingDates = extend([], this.dateRanges)
 }
 
 // _read will be called once for each collected item
@@ -53,18 +61,43 @@ FacebookInsightStream.prototype._read = function ( ) {
     if ( ! this.items.length ) {
         return this.push( null )
     }
+
+    if (this.items.length && 
+        this.remainingDates.length == 0) {
+        this.remainingDates = extend([], this.dateRanges)
+    }
+
     var metrics = this.options.metrics.clone();
     var item = this.items[ this.items.length - 1 ];
+    var dateRange = this.remainingDates[ this.remainingDates.length - 1 ];
     var events = this.events.clone();
 
-    this._collect( metrics, item, {}, events )
+    this._collect( metrics, item, {}, events, dateRange)
+        .tap( this.removeDate.bind( this ) )
         .tap( this.removeItem.bind( this ) )
+        .tap( this.progress.bind( this ))
         .then( this._handleData.bind( this ) )
 }
 
+FacebookInsightStream.prototype.progress = function () {
+    this.emit( 'progress', {
+        total: this.total,
+        loaded: this.loaded,
+        message: '{{remaining}} ' + this.options.node + 's remaining'
+    })
+}
+
+FacebookInsightStream.prototype.removeDate = function () {
+    var idx = this.remainingDates.indexOf( this.dateRange );
+    this.remainingDates.splice( idx, 1 );   
+}
+
 FacebookInsightStream.prototype.removeItem = function () {
-    var idx = this.items.indexOf( this.item );
-    this.items.splice( idx, 1 );
+    if  (!this.remainingDates.length) {
+        var idx = this.items.indexOf( this.item );
+        this.items.splice( idx, 1 );
+        this.loaded += 1
+    }
 }
 
 FacebookInsightStream.prototype._handleData = function ( data ) {
@@ -73,15 +106,6 @@ FacebookInsightStream.prototype._handleData = function ( data ) {
 
 FacebookInsightStream.prototype._init = function ( callback ) {
     var options = this.options;
-
-    // building url pattern for all the request
-    var until = Date.now();
-    var since = new Date();
-    since = since.setDate( since.getDate() - options.pastdays )
-
-    // fb ask for timestamp in seconds
-    until = Math.round( until / 1000 );
-    since = Math.round( since / 1000 );
 
     var path = [
         BASEURL,
@@ -94,8 +118,8 @@ FacebookInsightStream.prototype._init = function ( callback ) {
     var breakdowns = options.breakdowns;
 
     let queryObj = {
-        since: options.pastdays ? since : '',
-        until: until,
+        since: '',
+        until: '',
         period: options.period,
         access_token: options.token,
         event_name: hasEvents ? '{ev}' : '',
@@ -187,7 +211,7 @@ FacebookInsightStream.prototype._initItem = function ( item ) {
  * of the current metric to the appropriate key in the buffer.
  * finally we generating single row for each day.
  */
-FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, events ) {
+FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, events, dateRange) {
     var options = this.options;
     var hasEvents = events && events.length;
     // done with the current item
@@ -207,11 +231,6 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             return row;
         })
 
-        this.emit( 'progress', {
-            total: this.total,
-            loaded: ++this.loaded,
-            message: '{{remaining}} ' + options.node + 's remaining'
-        })
         return data;
     }
 
@@ -230,11 +249,13 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
         extend( model, { ev: _ev, agg: _agg } );
     }
-
+    
     var url = strReplace( this.url, model );
     url = url.replace(/access_token=.*?&/, `access_token=${item.token}&`)
+    url = url.replace(/since=.*?&/, `since=${dateRange.since}&`)
+    url = url.replace(/until=.*?&/, `until=${dateRange.until}&`)
     var title = 'FACEBOOK ' + options.node.toUpperCase();
-
+    
     console.log( new Date().toISOString(), title, url );
 
     return FacebookInsightStream.apiCall(url)
@@ -302,10 +323,10 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
             metrics.splice( _metricIdx, 1 );
             events.splice( _evIdx, 1 );
 
-            return this._collect( metrics, item, buffer, events );
+            return this._collect( metrics, item, buffer, events, dateRange);
         })
         .catch( function ( error ) {
-            var retry = this._collect.bind(this, metrics, item, buffer, events);
+            var retry = this._collect.bind(this, metrics, item, buffer, events, dateRange);
             return this.handleError( error, retry );
         })
 }
@@ -380,4 +401,35 @@ function aggregationType ( ev ) {
         return 'COUNT'
     }
     return 'SUM';
+}
+
+/** 
+*/
+function dateRanges (  n ) {
+    if (!n) {
+        return [
+            {since: '', until: moment().unix()}
+        ]
+    }
+    let pastdays = n
+    let dateRanges = []
+    let since = moment().startOf('day');
+
+    since = since.subtract(pastdays, 'days')
+    while (pastdays > 0) {
+        days = (pastdays <= FB_MAX_DATE_RANGE) ? pastdays : FB_MAX_DATE_RANGE 
+        until = since.clone().add(days, 'days').endOf('day')
+            
+        dateRanges.push({since: since, until: until})
+
+        since = until.clone().add(1, 'days').startOf('day')
+        pastdays = pastdays - days
+    }
+
+    let transformed = dateRanges.map(item => {
+        timestamp = {since: item.since.unix(),until: item.until.unix()}
+        return timestamp
+    })
+
+    return transformed
 }
