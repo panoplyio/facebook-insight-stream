@@ -249,7 +249,7 @@ FacebookInsightStream.prototype._collect = function ( metrics, item, buffer, eve
 
         extend( model, { ev: _ev, agg: _agg } );
     }
-    
+
     var url = strReplace( this.url, model );
     url = url.replace(/access_token=.*?&/, `access_token=${item.token}&`)
     url = url.replace(/since=.*?&/, `since=${dateRange.since}&`)
@@ -414,11 +414,16 @@ function dateRanges (  n ) {
     let pastdays = n
     let dateRanges = []
     let since = moment().startOf('day');
+    let now = moment().endOf('day')
 
     since = since.subtract(pastdays, 'days')
     while (pastdays > 0) {
         days = (pastdays <= FB_MAX_DATE_RANGE) ? pastdays : FB_MAX_DATE_RANGE 
         until = since.clone().add(days, 'days').endOf('day')
+
+        if (until.isAfter(now)) {
+            until = now.clone()
+        }
             
         dateRanges.push({since: since, until: until})
 

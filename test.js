@@ -2,6 +2,7 @@ var assert = require( "assert" );
 var request = require( "request" );
 var sinon = require( "sinon" );
 var Promise = require( "bluebird" );
+var moment = require('moment')
 const queryString = require('querystring')
 var FacebookInsightStream = require( "./index" );
 
@@ -257,6 +258,83 @@ describe( 'Multiple access tokens', function () {
 
 })
 
+describe('Date Ranges', function () {
+    let clock;
+ 
+
+    beforeEach(function () {
+        //sets date to Mar 31, 2018 at 00:00
+        clock = sinon.useFakeTimers(new Date(2018,2,31).getTime()) 
+    });
+
+    afterEach(function() {
+        clock.restore()
+    })
+    
+    it('Test dateRanges with pastdays 30', function (){
+        let options = {
+            pastdays: '30',
+        }
+        let stream = new FacebookInsightStream( options )
+        let dateRanges = stream.dateRanges
+        
+        let since = moment('2018-03-01').startOf('day')
+        let until = moment('2018-03-31').endOf('day')
+
+        dateRange = dateRanges[0]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+    })
+
+    it('Test dateRanges more than 90 days', function (){
+        let options = {
+            pastdays: '365',
+        }
+        let stream = new FacebookInsightStream( options )
+        let dateRanges = stream.dateRanges
+        
+        let since = moment('2017-03-31').startOf('day')
+        let until = moment('2017-06-29').endOf('day')
+
+        dateRange = dateRanges[0]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+
+        since = moment('2017-06-30').startOf('day')
+        until = moment('2017-09-28').endOf('day')
+
+        dateRange = dateRanges[1]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+
+        since = moment('2017-09-29').startOf('day')
+        until = moment('2017-12-28').endOf('day')
+
+        dateRange = dateRanges[2]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+
+        since = moment('2017-12-29').startOf('day')
+        until = moment('2018-03-29').endOf('day')
+
+        dateRange = dateRanges[3]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+
+        since = moment('2018-03-30').startOf('day')
+        until = moment('2018-03-31').endOf('day')
+
+        dateRange = dateRanges[4]
+
+        assert.equal(dateRange.since, since.unix())
+        assert.equal(dateRange.until, until.unix())
+    })
+})
 
 function initialize( result, response, source, fetchBOT ) {
 
