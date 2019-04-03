@@ -179,10 +179,8 @@ describe( "Fetch beginning of time", function () {
     after( reset )
 
     it( 'Fetch insights from beginning of time', function () {
-        console.log('calledUrl: ', calledUrl)
         const parts = calledUrl.split('?')
         const parsed = queryString.parse(parts[1])
-        console.log('parsed: ', parsed)
         assert.equal(Boolean(parsed.since), false)
     })
 })
@@ -336,7 +334,195 @@ describe('Date Ranges', function () {
     })
 })
 
-function initialize( result, response, source, fetchBOT ) {
+describe('Fetch more than 90 days', function () {
+    let clock
+    let reqStub
+    const sandbox = sinon.sandbox.create()
+ 
+    beforeEach(function () {
+        //sets date to Mar 31, 2018 at 00:00
+        clock = sinon.useFakeTimers(new Date(2018,2,31).getTime()) 
+        reqStub = sandbox.stub(request, 'getAsync')
+    });
+
+    afterEach(function() {
+        clock.restore()
+        sandbox.restore()
+    })
+
+    it('Fetch last 365 days', done => {
+        let data = {
+            data: [
+                {
+                    name: 'metric1',
+                    period: 'day',
+                    values: [
+                        {value: 0, end_time: '2018-07-09T07:00:00+0000'}
+                    ]
+                }
+            ]
+        }
+        
+        let respPage1 = {
+                name: 'page1',
+                id: 'page1'
+        }
+
+        let respPage2 = {
+            name: 'page2',
+            id: 'page2'
+        }
+
+        let page1Stub = Promise.resolve([null, JSON.stringify(respPage1)])
+        let page2Stub = Promise.resolve([{}, JSON.stringify(respPage2)])
+
+        let resultStub = Promise.resolve([{}, JSON.stringify(data)])
+
+        reqStub.onCall(0).returns(page1Stub)
+        reqStub.onCall(1).returns(page2Stub)
+        reqStub.returns(resultStub)
+
+        let options = {
+            pastdays: 365,
+            node: 'page',
+            token: 'some_token',
+            period: 'day',
+            metrics: ['page_views'],
+            itemList: [
+                {
+                    name: 'page1',
+                    id: 'page1',
+                    token: 'some_token'
+                },
+                {
+                    name: 'page2',  
+                    id: 'page2',
+                    token: 'some_token'
+                }
+            ]
+        }
+
+
+        var pageStream = new FacebookInsightStream( options )
+        .on( "data",  ()=> {})
+        .on('end', () => {
+            let since = moment('2018-03-30').startOf('day')
+            let until = moment('2018-03-31').endOf('day')
+            let url = reqStub.getCall(2).args[0]
+            parts = url.split('?')
+            let parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page2') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+            
+            since = moment('2017-12-29').startOf('day')
+            until = moment('2018-03-29').endOf('day')
+            url = reqStub.getCall(3).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page2') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-09-29').startOf('day')
+            until = moment('2017-12-28').endOf('day')
+            url = reqStub.getCall(4).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page2') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-06-30').startOf('day')
+            until = moment('2017-09-28').endOf('day')
+            url = reqStub.getCall(5).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page2') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-03-31').startOf('day')
+            until = moment('2017-06-29').endOf('day')
+            url = reqStub.getCall(6).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page2') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            // Should move to page1
+            since = moment('2018-03-30').startOf('day')
+            until = moment('2018-03-31').endOf('day')
+            url = reqStub.getCall(7).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page1') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+            
+            since = moment('2017-12-29').startOf('day')
+            until = moment('2018-03-29').endOf('day')
+            url = reqStub.getCall(8).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page1') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-09-29').startOf('day')
+            until = moment('2017-12-28').endOf('day')
+            url = reqStub.getCall(9).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page1') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-06-30').startOf('day')
+            until = moment('2017-09-28').endOf('day')
+            url = reqStub.getCall(10).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page1') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            since = moment('2017-03-31').startOf('day')
+            until = moment('2017-06-29').endOf('day')
+            url = reqStub.getCall(11).args[0]
+            parts = url.split('?')
+            parsed = queryString.parse(parts[1])
+
+            assert.equal(parts[0].indexOf('page1') > -1, true)
+            assert.equal(parts[0].indexOf('page_views') > -1 , true)
+            assert.equal(parsed.since, since.unix())
+            assert.equal(parsed.until, until.unix())
+
+            done()
+        })
+    })
+}) 
+
+function initialize( result, response, source, fetchBOT) {
 
     result.batchCount = 0;
 
