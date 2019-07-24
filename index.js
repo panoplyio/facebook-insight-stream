@@ -10,7 +10,7 @@ var moment = require('moment')
 
 request = Promise.promisifyAll( request )
 
-var BASEURL = 'https://graph.facebook.com/v3.2';
+var BASEURL = 'https://graph.facebook.com/v3.3';
 // Missing data is flagged by the error code 100
 // GraphMethodException error:
 // Object with ID 'some_id' does not exist,
