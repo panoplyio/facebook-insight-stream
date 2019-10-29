@@ -22,7 +22,7 @@
   "homepage": "https://github.com/panoplyio/facebook-insight-stream#readme",
   "dependencies": {
     "bluebird": "2.9.32",
-    "extend": "3.0.0",
+    "extend": "3.0.2",
     "moment": "2.24.0",
     "request": "2.53.0",
     "sugar": "1.4.1"
